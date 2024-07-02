@@ -42,8 +42,8 @@ jobs:
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v6.2.0
-        push: true
         with:
+          context: .
+          push: true
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
-          
