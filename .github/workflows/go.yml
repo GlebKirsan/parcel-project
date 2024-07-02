@@ -1,0 +1,48 @@
+name: Test and publish
+
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: golang:1.21
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run unit tests
+        run: GOOS=linux GOARCH=amd64 go test ./..
+
+      - name: Vet
+        run: go vet ./...
+
+  deploy:
+    name: Push Docker image to Docker Hub
+    runs-on: ubuntu-latest
+    needs: test
+    if: startsWith(github.ref, 'refs/tags')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Docker Metadata action
+        id: meta
+        uses: docker/metadata-action@v5.5.1
+        with:
+          images: glebkirsan/golang-parcel
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v6.2.0
+        with:
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          
